@@ -19,8 +19,9 @@ public class Player {
 	int deaths;
 	int assists;
 	int creepScore;
+	int tenPlusKillsOrAssists;
 	
-	public Player(String team, String playerName, String position, int numGames, int kills, int deaths, int assists, int creepScore) {
+	public Player(String team, String playerName, String position, int numGames, int kills, int deaths, int assists, int creepScore, int tenPlusKillsOrAssists) {
 		this.team = team;
 		this.playerName = playerName;
 		this.position = position;
@@ -29,10 +30,11 @@ public class Player {
 		this.deaths = deaths;
 		this.assists = assists;
 		this.creepScore = creepScore;
+		this.tenPlusKillsOrAssists = tenPlusKillsOrAssists;
 	}
 
 	public double calcAvgPointsPerGame() {
-		return (2 * kills - 0.5 * deaths + 1.5 * assists + 0.01 * creepScore) / numGames;
+		return (2 * kills - 0.5 * deaths + 1.5 * assists + 0.01 * creepScore + 2 * tenPlusKillsOrAssists) / numGames;
 	}
 	
 	public String getPos() {
@@ -47,7 +49,8 @@ public class Player {
 				kills + mySeparator +
 				deaths + mySeparator +
 				assists + mySeparator +
-				creepScore + mySeparator +  
+				creepScore + mySeparator + 
+				tenPlusKillsOrAssists + mySeparator + 
 				DECIMAL_FORMATTER.format(calcAvgPointsPerGame());
 	}
 	

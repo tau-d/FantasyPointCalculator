@@ -53,7 +53,7 @@ public class LeaguepediaScraper {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			docs.add(doc);
+			if (doc != null) docs.add(doc);
 		}
 	}
 
@@ -77,12 +77,55 @@ public class LeaguepediaScraper {
 		saveStats("scoreboard_data\\", all_players);
 	}
 
+	private static int countWeeks(Document doc) {
+		int maxWeek = 1;
+		for (Element e : doc.getElementsByTag("a")) {
+			String link = e.attr("href");
+			maxWeek = Math.max(maxWeek, getWeekNumFromHref(link));
+		}
+		
+		return maxWeek;
+	}
+	
+	private static int getWeekNumFromHref(String href) {
+		final String prefix = "/Week_";
+		int week_start = href.lastIndexOf(prefix);
+		
+		if (week_start == -1) return -1; // prefix does not exist
+		
+		final int numStart = week_start + prefix.length();
+		int numEnd = numStart;
+		while (numEnd < href.length() && Character.isDigit(href.charAt(numEnd))) {
+			++numEnd;
+		}
+		
+		try {
+			int numWeek = Integer.parseInt(href.substring(numStart, numEnd));
+			return numWeek;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return -1;
+		}
+	}
+	
 	private static void parseAllSplitScoreboards(String url, Map<Player, Player> storedPlayers) {
-		// TODO: determine number of weeks
-		final int NUM_WEEKS = 9;
-		List<Document> docs = Collections.synchronizedList(new ArrayList<>(NUM_WEEKS));
+		List<Document> docs = Collections.synchronizedList(new ArrayList<>());
+		
+		Document week1 = null;
+		String week1Url = url + "/Week_1";
+		try {
+			System.out.println(week1Url + " STARTING");
+			week1 = Jsoup.connect(week1Url).timeout(60*1000).get();
+			System.out.println(week1Url + " COMPLETE");
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.err.println("Failed to get Week 1 document. Cannot count weeks.");
+		}
+		docs.add(week1);
+		
+		final int NUM_WEEKS = countWeeks(week1);
 		ExecutorService es = Executors.newFixedThreadPool(NUM_WEEKS);
-		for (int i = 1; i <= NUM_WEEKS; ++i) {
+		for (int i = 2; i <= NUM_WEEKS; ++i) {
 			es.execute(new docGetter(docs, url + "/Week_" + i));
 		}
 		es.shutdown();
@@ -192,7 +235,6 @@ public class LeaguepediaScraper {
 		main.tenPlusKillsOrAssists += secondary.tenPlusKillsOrAssists;
 	}
 
-
 	private static void writePlayersToCsvFile(String path, String filename, List<Player> players) {
 		File file = new File(path);
 		file.mkdirs();
@@ -207,6 +249,7 @@ public class LeaguepediaScraper {
 	}
 
 	private static void saveStats(String dirPath, List<Player> allPlayers) {
+		// TODO: let user choose where to save
 		Collections.sort(allPlayers, (o1, o2) -> (o1.calcAvgPointsPerGame() > o2.calcAvgPointsPerGame()) ? -1 : 1);
 
 		List<Player> mids = new ArrayList<>();

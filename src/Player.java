@@ -63,9 +63,9 @@ public class Player {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((playerName == null) ? 0 : playerName.hashCode());
-		result = prime * result + ((position == null) ? 0 : position.hashCode());
-		result = prime * result + ((team == null) ? 0 : team.hashCode());
+		result = prime * result + ((playerName == null) ? 0 : playerName.toLowerCase().hashCode());
+		result = prime * result + ((position == null) ? 0 : position.toLowerCase().hashCode());
+		result = prime * result + ((team == null) ? 0 : team.toLowerCase().hashCode());
 		return result;
 	}
 
@@ -81,17 +81,17 @@ public class Player {
 		if (playerName == null) {
 			if (other.playerName != null)
 				return false;
-		} else if (!playerName.equals(other.playerName))
+		} else if (!playerName.equalsIgnoreCase(other.playerName))
 			return false;
 		if (position == null) {
 			if (other.position != null)
 				return false;
-		} else if (!position.equals(other.position))
+		} else if (!position.equalsIgnoreCase(other.position))
 			return false;
 		if (team == null) {
 			if (other.team != null)
 				return false;
-		} else if (!team.equals(other.team))
+		} else if (!team.equalsIgnoreCase(other.team))
 			return false;
 		return true;
 	}

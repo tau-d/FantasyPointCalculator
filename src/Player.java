@@ -1,9 +1,20 @@
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
+
+//TODO: feature suggestions: output stats by week?, team/player matchups?, more points than opponents?
 
 public class Player {
 	private static final String SEPARATOR = "\t";
 	private static final NumberFormat DECIMAL_FORMATTER = new DecimalFormat("#0.00");
+	
+	public static final String COL_HEADERS = 	"Team,Player,Position," + 
+												"# Games,Avg Pnts/Game,stdev," + 
+												"# Wins,Avg Pnts/Win,stdev," + 
+												"# Losses,Avg Pnts/Loss,stdev," + 
+												"Kills,Deaths,Assists,CS,10+ K/A," + 
+												"\n";
 	
 	public static final String MID = "MID";
 	public static final String ADC = "ADC";
@@ -14,44 +25,82 @@ public class Player {
 	String team;
 	String playerName;
 	String position;
-	int numGames;
-	int kills;
-	int deaths;
-	int assists;
-	int creepScore;
-	int tenPlusKillsOrAssists;
-	
-	public Player(String team, String playerName, String position, int numGames, int kills, int deaths, int assists, int creepScore, int tenPlusKillsOrAssists) {
+	List<List<MatchStats>> weekList;
+	PlayerStatistics stats;
+		
+	public Player(String team, String playerName, String position) {
 		this.team = team;
 		this.playerName = playerName;
 		this.position = position;
-		this.numGames = numGames;
-		this.kills = kills;
-		this.deaths = deaths;
-		this.assists = assists;
-		this.creepScore = creepScore;
-		this.tenPlusKillsOrAssists = tenPlusKillsOrAssists;
+		
+		weekList = new ArrayList<>();
+		newWeek();
+		
+		stats = null;
 	}
 
-	public double calcAvgPointsPerGame() {
-		return (2 * kills - 0.5 * deaths + 1.5 * assists + 0.01 * creepScore + 2 * tenPlusKillsOrAssists) / numGames;
+	public double getAvgPntsPerGame() {
+		if (stats == null) {
+			stats = new PlayerStatistics(weekList);
+		}
+		return stats.avgPntsPerGame;
+	}
+			
+	public void addMatch(boolean win, String enemyTeam, int kills, int deaths, int assists, int creepScore) {
+		stats = null; // new match makes previously calculated stats invalid
+		if (weekList.isEmpty()) {
+			System.err.println("Cannot add match before a week is added");
+			return;
+		}
+		getLatestWeek().add(new MatchStats(win, enemyTeam, kills, deaths, assists, creepScore));
 	}
 	
-	public String getPos() {
-		return position;
+	private List<MatchStats> getLatestWeek() {
+		if (weekList.isEmpty()) {
+			System.err.println("No week exists");
+			return null;
+		}
+		return weekList.get(weekList.size() - 1);
+	}
+	
+	public void newWeek() {
+		List<MatchStats> newWeek = new ArrayList<>();
+		weekList.add(newWeek);
 	}
 	
 	public String myToString(String mySeparator) {
-		return 	team + mySeparator + 
-				playerName + mySeparator + 
-				position + mySeparator +
-				numGames + mySeparator + 
-				kills + mySeparator +
-				deaths + mySeparator +
-				assists + mySeparator +
-				creepScore + mySeparator + 
-				tenPlusKillsOrAssists + mySeparator + 
-				DECIMAL_FORMATTER.format(calcAvgPointsPerGame());
+		if (stats == null) {
+			stats = new PlayerStatistics(weekList);
+		}
+		
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append(team + mySeparator);
+		sb.append(playerName + mySeparator);
+		sb.append(position + mySeparator);
+				
+		sb.append(stats.numGames + mySeparator);
+		sb.append(format(stats.avgPntsPerGame) + mySeparator);
+		sb.append(format(stats.stdevPntsPerGame) + mySeparator);
+		sb.append(stats.numWins + mySeparator);
+		sb.append(format(stats.avgPntsPerWin) + mySeparator);
+		sb.append(format(stats.stdevPntsPerWin) + mySeparator);
+		sb.append(stats.numLosses + mySeparator);
+		sb.append(format(stats.avgPntsPerLoss) + mySeparator);
+		sb.append(format(stats.stdevPntsPerLoss) + mySeparator);
+		
+		
+		sb.append(stats.totalKills + mySeparator);
+		sb.append(stats.totalDeaths + mySeparator);
+		sb.append(stats.totalAssists + mySeparator);
+		sb.append(stats.totalCreepScore + mySeparator);
+		sb.append(stats.totalTenPlusKorA);
+		
+		return sb.toString();
+	}
+	
+	private String format(double d) {
+		return DECIMAL_FORMATTER.format(d);
 	}
 	
 	@Override

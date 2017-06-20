@@ -21,11 +21,6 @@ import org.jsoup.select.Elements;
 
 
 public class LeaguepediaScraper {
-
-	// TODO: let user choose whether to split individual players by team/position
-
-	// feature suggestions: week by week, team matchups?, more points than opponents?
-
 	private static final String[] ORDERED_POSITIONS = {Player.TOP, Player.JGL, Player.MID, Player.ADC, Player.SUP};
 	private static final String[] SCOREBOARD_COLUMN_HEADERS = {"Player", "K", "D", "A", "CS"};
 	// private static final String[] PLAYER_STATS_COLUMN_HEADERS = {"T", "Player", "P", "G", "K", "D", "A", "CS"};
@@ -67,47 +62,19 @@ public class LeaguepediaScraper {
 		}
 
 		List<Player> all_players = new ArrayList<>(storedPlayers.values());
-		saveStats("scoreboard_data\\", all_players);
+		savePlayerStats("scoreboard_data\\", all_players);
 	}
 
 	private static void parseAllSplitScoreboards(String url) {
 		Map<Player, Player> storedPlayers = new HashMap<>();
 		parseAllSplitScoreboards(url, storedPlayers);
 		List<Player> all_players = new ArrayList<>(storedPlayers.values());
-		saveStats("scoreboard_data\\", all_players);
-	}
-
-	private static int countWeeks(Document doc) {
-		int maxWeek = 1;
-		for (Element e : doc.getElementsByTag("a")) {
-			String link = e.attr("href");
-			maxWeek = Math.max(maxWeek, getWeekNumFromHref(link));
-		}
-		
-		return maxWeek;
+		savePlayerStats("scoreboard_data\\", all_players);
 	}
 	
-	private static int getWeekNumFromHref(String href) {
-		final String prefix = "/Week_";
-		int week_start = href.lastIndexOf(prefix);
-		
-		if (week_start == -1) return -1; // prefix does not exist
-		
-		final int numStart = week_start + prefix.length();
-		int numEnd = numStart;
-		while (numEnd < href.length() && Character.isDigit(href.charAt(numEnd))) {
-			++numEnd;
-		}
-		
-		try {
-			int numWeek = Integer.parseInt(href.substring(numStart, numEnd));
-			return numWeek;
-		} catch (Exception e) {
-			e.printStackTrace();
-			return -1;
-		}
-	}
-	
+	/*
+	 * Get the Documents for all the weeks in the split, process them, and store the player stats in storedPlayers 
+	 */
 	private static void parseAllSplitScoreboards(String url, Map<Player, Player> storedPlayers) {
 		List<Document> docs = Collections.synchronizedList(new ArrayList<>());
 		
@@ -143,10 +110,48 @@ public class LeaguepediaScraper {
 		}
 	}
 
+	private static int countWeeks(Document doc) {
+		int maxWeek = 1;
+		for (Element e : doc.getElementsByTag("a")) {
+			String link = e.attr("href");
+			maxWeek = Math.max(maxWeek, getWeekNumFromHref(link));
+		}
+		
+		return maxWeek;
+	}
+	
+	private static int getWeekNumFromHref(String href) {
+		final String prefix = "/Week_";
+		int week_start = href.lastIndexOf(prefix);
+		
+		if (week_start == -1) return -1; // prefix does not exist
+		
+		final int numStart = week_start + prefix.length();
+		int numEnd = numStart;
+		while (numEnd < href.length() && Character.isDigit(href.charAt(numEnd))) {
+			++numEnd;
+		}
+		
+		try {
+			int numWeek = Integer.parseInt(href.substring(numStart, numEnd));
+			return numWeek;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return -1;
+		}
+	}
+	
+	/*
+	 * Parse all the match tables in document and save the match stats of each player in storedPlayers
+	 */
 	private static void parseOneWeekScoreboard(Document doc, Map<Player, Player> storedPlayers) {
 		if (doc == null) {
 			System.err.println("Document is null");
 			return;
+		}
+		
+		for (Player p : storedPlayers.values()) {
+			p.newWeek();
 		}
 
 		Elements gameTables = doc.getElementsByClass("match-recap");
@@ -154,17 +159,22 @@ public class LeaguepediaScraper {
 			System.out.println(doc.location() + " NO GAME TABLES");
 			return;
 		}
-
+		
+		Map<String, Integer> teamToWins = new HashMap<>();
+		
 		for (Element game : gameTables) {
 			Element tbody = game.child(game.children().size() - 1);
 
 			Element teams = tbody.child(1);
 			String team1 = teams.child(0).ownText();
 			String team2 = teams.child(3).ownText();
-
+			
+			//System.out.println(teams.text());
+			
 			Elements tables = tbody.getElementsByTag("table");
 			if (tables.isEmpty() || tables.get(tables.size() - 1).children().isEmpty()) {
 				System.out.println(doc.location() + " " + team1 + " vs " + team2 + " NO SCOREBOARD TABLE");
+				continue;
 			}
 
 			Element scoreboardTbody = tables.get(tables.size() - 1).child(0);
@@ -173,6 +183,30 @@ public class LeaguepediaScraper {
 				continue;
 			}
 
+			int team1Score = Integer.parseInt(teams.child(1).ownText());
+			int team2Score = Integer.parseInt(teams.child(2).ownText());
+			
+			if ((team1Score == 1 && team2Score == 0) || (team2Score == 1 && team1Score == 0) ) { // Must be new set, reset score to 0-0
+				teamToWins.put(team1, 0);
+				teamToWins.put(team2, 0);
+			}
+			
+			int prevTeam1Score = teamToWins.get(team1);
+			int prevTeam2Score = teamToWins.get(team2);
+			
+			teamToWins.put(team1, team1Score);
+			teamToWins.put(team2, team2Score);
+			
+			String winner = null;
+			if (prevTeam1Score < team1Score) {
+				winner = team1;
+			} else if (prevTeam2Score < team2Score) {
+				winner = team2;
+			} else {
+				System.err.println(doc.location() + " " + team1 + " vs " + team2 + " THERE IS NO WINNER?");
+				continue;
+			}
+			
 			Element columnHeaders = scoreboardTbody.child(0);
 			Map<String, Integer> colTitleToColNum = new HashMap<>();
 			int colCount = 0;
@@ -187,20 +221,25 @@ public class LeaguepediaScraper {
 				}				
 			}
 
-			parseFiveScoreboardRows(scoreboardTbody, 1, team1, colTitleToColNum, storedPlayers); // Team 1
-			parseFiveScoreboardRows(scoreboardTbody, 7, team2, colTitleToColNum, storedPlayers); // Team 2
+			parseFiveScoreboardRows(scoreboardTbody, 1, team1, team2, winner, colTitleToColNum, storedPlayers); // Team 1
+			parseFiveScoreboardRows(scoreboardTbody, 7, team2, team1, winner, colTitleToColNum, storedPlayers); // Team 2
 		}
 	}
 
-	private static void parseFiveScoreboardRows(Element scoreboardTbody, int startIndex, String teamName, Map<String, Integer> colTitleToColNum, Map<Player, Player> players) {
+	/*
+	 * Parse 5 rows of the scoreboard which corresponds to the 5 players on one team
+	 */
+	private static void parseFiveScoreboardRows(Element scoreboardTbody, int startIndex, String teamName, String enemyTeam, String winningTeam, Map<String, Integer> colTitleToColNum, Map<Player, Player> players) {
 		for (int i = startIndex; i < startIndex + 5; ++i) {
 			Element playerRow = scoreboardTbody.child(i);
 
+			//TODO: get player name from link if possible to deal with inconsistent/misspelled names? (ex. Cody Sun = Cody, Steeelback = Steelback in Spring 2017 split)
 			String playerName = playerRow.child(colTitleToColNum.get(SCOREBOARD_COLUMN_HEADERS[0])).child(0).ownText();
 			String position = ORDERED_POSITIONS[i - startIndex];
 			int kills, deaths, assists, creepScore;
 
 			try {
+				// TODO: no way to determine 3/4/5k from scoreboards currently
 				kills = NUM_FORMATTER.parse(playerRow.child(colTitleToColNum.get(SCOREBOARD_COLUMN_HEADERS[1])).ownText()).intValue();
 				deaths = NUM_FORMATTER.parse(playerRow.child(colTitleToColNum.get(SCOREBOARD_COLUMN_HEADERS[2])).ownText()).intValue();
 				assists = NUM_FORMATTER.parse(playerRow.child(colTitleToColNum.get(SCOREBOARD_COLUMN_HEADERS[3])).ownText()).intValue();
@@ -211,46 +250,25 @@ public class LeaguepediaScraper {
 				continue;
 			}
 
-			int tenPlusKillsOrAssists = (kills >= 10 || assists >= 10) ? 1 : 0;
-
-			// TODO: no way to determine 3/4/5k from scoreboards currently
-			Player p = new Player(teamName, playerName, position, 1, kills, deaths, assists, creepScore, tenPlusKillsOrAssists);
+			Player p = new Player(teamName, playerName, position);
 
 			Player existing = players.get(p);
 			if (existing != null) {
-				// Add new stats to player object already in the map
-				combinePlayerStats(existing, p);
+				existing.addMatch(teamName.equalsIgnoreCase(winningTeam), enemyTeam, kills, deaths, assists, creepScore);
 			} else {
 				players.put(p, p);
+				p.newWeek();
+				p.addMatch(teamName.equalsIgnoreCase(winningTeam), enemyTeam, kills, deaths, assists, creepScore);
 			}
 		}
 	}
-
-	private static void combinePlayerStats(Player main, Player secondary) {
-		main.numGames += secondary.numGames;
-		main.kills += secondary.kills;
-		main.deaths += secondary.deaths;
-		main.assists += secondary.assists;
-		main.creepScore += secondary.creepScore;
-		main.tenPlusKillsOrAssists += secondary.tenPlusKillsOrAssists;
-	}
-
-	private static void writePlayersToCsvFile(String path, String filename, List<Player> players) {
-		File file = new File(path);
-		file.mkdirs();
-		try (BufferedWriter bw = new BufferedWriter(new FileWriter(path + filename + ".csv"))) {
-			bw.write("Team,Player,Position,Games,Kills,Deaths,Assists,CS,10+ K/A,Avg Points/Game\n");
-			for (Player p : players) {
-				bw.write(p.myToString(",") + "\n");
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private static void saveStats(String dirPath, List<Player> allPlayers) {
+	
+	/*
+	 * Sort players by average fantasy points per game, separate players by position, and save player stats as CSV files
+	 */
+	private static void savePlayerStats(String dirPath, List<Player> allPlayers) {
 		// TODO: let user choose where to save
-		Collections.sort(allPlayers, (o1, o2) -> (o1.calcAvgPointsPerGame() > o2.calcAvgPointsPerGame()) ? -1 : 1);
+		Collections.sort(allPlayers, (o1, o2) -> (o1.getAvgPntsPerGame() > o2.getAvgPntsPerGame()) ? -1 : 1);
 
 		List<Player> mids = new ArrayList<>();
 		List<Player> adcs = new ArrayList<>();
@@ -260,7 +278,7 @@ public class LeaguepediaScraper {
 
 		// add to position lists after sort so they are already sorted
 		for (Player p : allPlayers) {
-			String pos = p.getPos();
+			String pos = p.position;
 			if (pos.equals(Player.MID)) {
 				mids.add(p);
 			} else if (pos.equals(Player.ADC)) {
@@ -276,17 +294,29 @@ public class LeaguepediaScraper {
 			}
 		}			
 
-		writePlayersToCsvFile(dirPath, "all_players", allPlayers);
-		writePlayersToCsvFile(dirPath, "mid", mids);
-		writePlayersToCsvFile(dirPath, "adc", adcs);
-		writePlayersToCsvFile(dirPath, "sup", supports);
-		writePlayersToCsvFile(dirPath, "top", tops);
-		writePlayersToCsvFile(dirPath, "jgl", junglers);
+		writePlayerStatsToCsvFile(dirPath, "all_players", allPlayers);
+		writePlayerStatsToCsvFile(dirPath, "mid", mids);
+		writePlayerStatsToCsvFile(dirPath, "adc", adcs);
+		writePlayerStatsToCsvFile(dirPath, "sup", supports);
+		writePlayerStatsToCsvFile(dirPath, "top", tops);
+		writePlayerStatsToCsvFile(dirPath, "jgl", junglers);
+	}
+	
+	private static void writePlayerStatsToCsvFile(String path, String filename, List<Player> players) {
+		File file = new File(path);
+		file.mkdirs();
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter(path + filename + ".csv"))) {
+			bw.write(Player.COL_HEADERS);
+			for (Player p : players) {
+				bw.write(p.myToString(",") + "\n");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
-
 	// Obsolete methods
-	private static void parsePlayerStatsAndAddPlayers(String url, List<Player> players) {
+	/*private static void parsePlayerStatsAndAddPlayers(String url, List<Player> players) {
 		Document doc = null;
 		try {
 			System.out.println(url + " STARTING");
@@ -315,7 +345,6 @@ public class LeaguepediaScraper {
 				int assists = NUM_FORMATTER.parse(row.child(9).ownText()).intValue();
 				int creepScore = NUM_FORMATTER.parse(row.child(11).ownText()).intValue();
 
-				// TODO: no way to determine 10+ kills/assists or 3/4/5k from player stats currently
 				Player p = new Player(team, playerName, position, numGames, kills, deaths, assists, creepScore, 0);
 				players.add(p);
 			}
@@ -323,9 +352,9 @@ public class LeaguepediaScraper {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
+	}*/
 
-	private static void calcAndSavePointsFromPlayerStats() {
+	/*private static void calcAndSavePointsFromPlayerStats() {
 		List<Player> all_players = new ArrayList<>();
 
 		// North America
@@ -341,9 +370,18 @@ public class LeaguepediaScraper {
 		//parsePlayerStatsAndAddPlayers("http://lol.gamepedia.com/2015_NA_LCS_Spring/Statistics", all_players);
 
 		saveStats("player_stats_data\\", all_players);
-	}
+	}*/
 
-
+	/*private static void combinePlayerStats(Player main, Player secondary) {
+		main.numGames += secondary.numGames;
+		main.kills += secondary.kills;
+		main.deaths += secondary.deaths;
+		main.assists += secondary.assists;
+		main.creepScore += secondary.creepScore;
+		main.tenPlusKillsOrAssists += secondary.tenPlusKillsOrAssists;
+	}*/
+	
+	// MAIN FOR TESTING
 	public static void main(String[] args) {
 		System.out.println(LeaguepediaScraper.class + ": MAIN START");
 		//calcAndSavePointsFromPlayerStats();

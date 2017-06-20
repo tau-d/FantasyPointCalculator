@@ -9,6 +9,8 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JDialog;
 
+//TODO: let user choose whether to split individual players by team/position?
+
 public class UrlInputDialog extends JDialog {
 
 	private static final long serialVersionUID = -8755424440192603683L;

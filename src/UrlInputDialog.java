@@ -3,38 +3,46 @@ import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.WindowConstants;
 
-//TODO: let user choose whether to split individual players by team/position?
+// TODO: let user choose whether to split individual players by team/position?
+// TODO: let user choose save format 
 
 public class UrlInputDialog extends JDialog {
 
 	private static final long serialVersionUID = -8755424440192603683L;
 	
-	private javax.swing.JPanel buttonPanel;
-    private javax.swing.JButton cancelButton;
-    private javax.swing.JButton okButton;
-    private javax.swing.JPanel urlInputPanel;
-    private javax.swing.JScrollPane urlScrollPanel;
-    private javax.swing.JTextArea urlTextArea;
-    private javax.swing.JLabel urlTextAreaLabel;
+	private JPanel buttonPanel;
+    private JButton cancelButton;
+    private JButton okButton;
+    private JPanel urlInputPanel;
+    private JScrollPane urlScrollPanel;
+    private JTextArea urlTextArea;
+    private JLabel urlTextAreaLabel;
 	
 	public UrlInputDialog() {
 		super();
 		
-		urlInputPanel = new javax.swing.JPanel();
-        urlTextAreaLabel = new javax.swing.JLabel();
-        urlScrollPanel = new javax.swing.JScrollPane();
-        urlTextArea = new javax.swing.JTextArea();
-        buttonPanel = new javax.swing.JPanel();
-        okButton = new javax.swing.JButton();
-        cancelButton = new javax.swing.JButton();
+		urlInputPanel = new JPanel();
+        urlTextAreaLabel = new JLabel();
+        urlScrollPanel = new JScrollPane();
+        urlTextArea = new JTextArea();
+        buttonPanel = new JPanel();
+        okButton = new JButton();
+        cancelButton = new JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Fantasy Point Calculator");
 
         urlTextAreaLabel.setText("Leaguepedia Scoreboard URLs (one URL per line and strip \"/week_XX\"): ");
@@ -87,10 +95,19 @@ public class UrlInputDialog extends JDialog {
 		// TODO: handle bad URLs
 		List<String> urlList = new ArrayList<>();
 		for (String url : lines) {
-			if (!url.isEmpty()) urlList.add(url);
+			String trimmed = url.trim();
+			if (!trimmed.isEmpty()) urlList.add(trimmed);
 		}
 		
-		LeaguepediaScraper.parseUrls(urlList);
+		Collection<Player> players = LeaguepediaScraper.getPlayerStatsFromBaseScoreboardUrls(urlList);
+		PlayerStatsSaver pss = new PlayerStatsSaver(players);
+		
+		System.out.println("SAVING START");
+		String dirPath = "scoreboard_data\\";
+		pss.saveAsCSV(dirPath);
+		pss.saveAsXLSX("", "workbook");
+		System.out.println("SAVING COMPLETE");
+		
 		dispose();
 	}
 	

@@ -8,13 +8,14 @@ import java.util.List;
 public class Player {
 	private static final String SEPARATOR = "\t";
 	private static final NumberFormat DECIMAL_FORMATTER = new DecimalFormat("#0.00");
-	
-	public static final String COL_HEADERS = 	"Team,Player,Position," + 
-												"# Games,Avg Pnts/Game,stdev," + 
-												"# Wins,Avg Pnts/Win,stdev," + 
-												"# Losses,Avg Pnts/Loss,stdev," + 
-												"Kills,Deaths,Assists,CS,10+ K/A," + 
-												"\n";
+		
+	public static final String[] COL_HEADERS = {
+			"Team", "Player", "Position",
+			"# Games","Avg Pnts/Game","stdev",
+			"# Wins","Avg Pnts/Win","stdev",
+			"# Losses","Avg Pnts/Loss","stdev",
+			"Kills","Deaths","Assists","CS","10+ K/A" 
+	};
 	
 	public static final String MID = "MID";
 	public static final String ADC = "ADC";
@@ -22,11 +23,11 @@ public class Player {
 	public static final String TOP = "TOP";
 	public static final String JGL = "JGL";
 	
-	String team;
-	String playerName;
-	String position;
-	List<List<MatchStats>> weekList;
-	PlayerStatistics stats;
+	private String team;
+	private String playerName;
+	private String position;
+	private List<List<MatchStats>> weekList;
+	private PlayerStatistics stats;
 		
 	public Player(String team, String playerName, String position) {
 		this.team = team;
@@ -38,14 +39,86 @@ public class Player {
 		
 		stats = null;
 	}
+	
+	public String getTeam() {
+		return team;
+	}
 
-	public double getAvgPntsPerGame() {
+	public String getPlayerName() {
+		return playerName;
+	}
+
+	public String getPosition() {
+		return position;
+	}
+
+	public List<List<MatchStats>> getWeekList() {
+		return weekList;
+	}
+
+	private PlayerStatistics getStats() {
 		if (stats == null) {
 			stats = new PlayerStatistics(weekList);
 		}
-		return stats.avgPntsPerGame;
+		return stats;
 	}
-			
+	
+	public int getTotalKills() {
+		return getStats().totalKills;
+	}
+
+	public int getTotalDeaths() {
+		return getStats().totalDeaths;
+	}
+
+	public int getTotalAssists() {
+		return getStats().totalAssists;
+	}
+
+	public int getTotalCreepScore() {
+		return getStats().totalCreepScore;
+	}
+
+	public int getTotalTenPlusKorA() {
+		return getStats().totalTenPlusKorA;
+	}
+
+	public int getNumGames() {
+		return getStats().numGames;
+	}
+
+	public double getAvgPntsPerGame() {
+		return getStats().avgPntsPerGame;
+	}
+
+	public double getStdevPntsPerGame() {
+		return getStats().stdevPntsPerGame;
+	}
+
+	public int getNumWins() {
+		return getStats().numWins;
+	}
+
+	public double getAvgPntsPerLoss() {
+		return getStats().avgPntsPerLoss;
+	}
+
+	public double getStdevPntsPerLoss() {
+		return getStats().stdevPntsPerLoss;
+	}
+
+	public int getNumLosses() {
+		return getStats().numLosses;
+	}
+
+	public double getAvgPntsPerWin() {
+		return getStats().avgPntsPerWin;
+	}
+
+	public double getStdevPntsPerWin() {
+		return getStats().stdevPntsPerWin;
+	}
+
 	public void addMatch(boolean win, String enemyTeam, int kills, int deaths, int assists, int creepScore) {
 		stats = null; // new match makes previously calculated stats invalid
 		if (weekList.isEmpty()) {
@@ -79,22 +152,21 @@ public class Player {
 		sb.append(playerName + mySeparator);
 		sb.append(position + mySeparator);
 				
-		sb.append(stats.numGames + mySeparator);
-		sb.append(format(stats.avgPntsPerGame) + mySeparator);
-		sb.append(format(stats.stdevPntsPerGame) + mySeparator);
-		sb.append(stats.numWins + mySeparator);
-		sb.append(format(stats.avgPntsPerWin) + mySeparator);
-		sb.append(format(stats.stdevPntsPerWin) + mySeparator);
-		sb.append(stats.numLosses + mySeparator);
-		sb.append(format(stats.avgPntsPerLoss) + mySeparator);
-		sb.append(format(stats.stdevPntsPerLoss) + mySeparator);
-		
-		
-		sb.append(stats.totalKills + mySeparator);
-		sb.append(stats.totalDeaths + mySeparator);
-		sb.append(stats.totalAssists + mySeparator);
-		sb.append(stats.totalCreepScore + mySeparator);
-		sb.append(stats.totalTenPlusKorA);
+		sb.append(getStats().numGames + mySeparator);
+		sb.append(format(getStats().avgPntsPerGame) + mySeparator);
+		sb.append(format(getStats().stdevPntsPerGame) + mySeparator);
+		sb.append(getStats().numWins + mySeparator);
+		sb.append(format(getStats().avgPntsPerWin) + mySeparator);
+		sb.append(format(getStats().stdevPntsPerWin) + mySeparator);
+		sb.append(getStats().numLosses + mySeparator);
+		sb.append(format(getStats().avgPntsPerLoss) + mySeparator);
+		sb.append(format(getStats().stdevPntsPerLoss) + mySeparator);
+				
+		sb.append(getStats().totalKills + mySeparator);
+		sb.append(getStats().totalDeaths + mySeparator);
+		sb.append(getStats().totalAssists + mySeparator);
+		sb.append(getStats().totalCreepScore + mySeparator);
+		sb.append(getStats().totalTenPlusKorA);
 		
 		return sb.toString();
 	}

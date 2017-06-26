@@ -1,23 +1,23 @@
 import java.util.List;
 
 public class PlayerStatistics {
-	int totalKills;
-	int totalDeaths;
-	int totalAssists;
-	int totalCreepScore;
-	int totalTenPlusKorA;
+	protected int totalKills;
+	protected int totalDeaths;
+	protected int totalAssists;
+	protected int totalCreepScore;
+	protected int totalTenPlusKorA;
 	
-	int numGames;
-	double avgPntsPerGame;
-	double stdevPntsPerGame;
+	protected int numGames;
+	protected double avgPntsPerGame;
+	protected double stdevPntsPerGame;
 	
-	int numWins;
-	double avgPntsPerLoss;
-	double stdevPntsPerLoss;
+	protected int numWins;
+	protected double avgPntsPerLoss;
+	protected double stdevPntsPerLoss;
 	
-	int numLosses;
-	double avgPntsPerWin;
-	double stdevPntsPerWin;
+	protected int numLosses;
+	protected double avgPntsPerWin;
+	protected double stdevPntsPerWin;
 	
 	public PlayerStatistics(List<List<MatchStats>> weekList) {
 		totalKills = 0;
@@ -34,6 +34,8 @@ public class PlayerStatistics {
 		calcStdevs(weekList);
 	}
 	
+	
+
 	private void calcTotalsAndAvgs(List<List<MatchStats>> weekList) {
 		double winPoints = 0, lossPoints = 0;
 		

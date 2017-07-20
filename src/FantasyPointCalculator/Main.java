@@ -1,4 +1,8 @@
+package FantasyPointCalculator;
+
 // TODO: uses stats to predict points given a fantasy team
+// TODO: add player kill participation
+// TODO: "tiers" for each position
 
 public class Main {
 		

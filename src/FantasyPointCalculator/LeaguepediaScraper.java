@@ -1,3 +1,5 @@
+package FantasyPointCalculator;
+
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -29,9 +31,11 @@ public class LeaguepediaScraper {
 	public static Collection<Player> getPlayerStatsFromBaseScoreboardUrls(List<String> baseScoreboardUrls) {
 		List<Document> docs = parseBaseScoreboardUrls(baseScoreboardUrls);
 		Map<Player, Player> players = new HashMap<>();
+		System.out.println("PARSING SCOREBOARDS");
 		for (Document doc : docs) {
 			parseOneWeekScoreboard(doc, players);
 		}
+		System.out.println("PARSING SCOREBOARDS COMPLETE");
 		return players.values();
 	}
 	

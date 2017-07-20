@@ -1,3 +1,5 @@
+package FantasyPointCalculator;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,6 +22,7 @@ import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 
@@ -202,6 +205,9 @@ public class PlayerStatsSaver {
 			sheet.setDefaultColumnStyle(i, defaultStyle);
 			sheet.autoSizeColumn(i);
 		}
+		
+		// Set up filters for team and player name
+		sheet.setAutoFilter(new CellRangeAddress(0, 1 + players.size(), 0, 1));
 	}
 	
 	private void buildCell(Row r, int col, CellType type, CellStyle style, double d) {

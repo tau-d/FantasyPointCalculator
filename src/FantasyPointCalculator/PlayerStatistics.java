@@ -1,3 +1,5 @@
+package FantasyPointCalculator;
+
 import java.util.List;
 
 public class PlayerStatistics {

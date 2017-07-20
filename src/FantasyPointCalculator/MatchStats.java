@@ -1,3 +1,4 @@
+package FantasyPointCalculator;
 
 public class MatchStats {
 

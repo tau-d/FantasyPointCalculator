@@ -134,6 +134,9 @@ public class PlayerStatsSaver {
 		Sheet supSheet = wb.createSheet("Support");
 		
 		buildSheet(allSheet, allPlayers);
+		// Position filter only for All Players sheet
+		allSheet.setAutoFilter(new CellRangeAddress(0, allPlayers.size(), 0, 2)); 
+		
 		buildSheet(topSheet, tops);
 		buildSheet(jglSheet, junglers);
 		buildSheet(midSheet, mids);
@@ -207,7 +210,7 @@ public class PlayerStatsSaver {
 		}
 		
 		// Set up filters for team and player name
-		sheet.setAutoFilter(new CellRangeAddress(0, 1 + players.size(), 0, 1));
+		sheet.setAutoFilter(new CellRangeAddress(0, players.size(), 0, 1));
 	}
 	
 	private void buildCell(Row r, int col, CellType type, CellStyle style, double d) {

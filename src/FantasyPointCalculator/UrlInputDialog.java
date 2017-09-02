@@ -104,6 +104,7 @@ public class UrlInputDialog extends JDialog {
 		Collection<Player> players = LeaguepediaScraper.getPlayerStatsFromBaseScoreboardUrls(urlList);
 		PlayerStatsSaver pss = new PlayerStatsSaver(players);
 		
+		// TODO: check if file is being used
 		System.out.println("SAVING START");
 		String dirPath = "scoreboard_data\\";
 		pss.saveAsCSV(dirPath);
